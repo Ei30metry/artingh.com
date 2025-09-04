@@ -1,0 +1,12 @@
+#+title: Contact
+
+- CV: [[./cv.pdf][pdf]]
+- Email: [[mailto:ghasivand.artin@gmail.com][ghasivand.artin@gmail.com]]
+- Github: [[https://github.com/Ei30metry][Ei30metry]]
+- Haskell [[https://gitlab.haskell.org/Ei30metry][Gitlab]]
+- LinkedIn: [[https://www.linkedin.com/in/artin-ghasivand/][Artin Ghasivand]]
+- Telegram: [[https://t.me/Ei30metry][Ei30metry]]
+- Mastodon: [[https://mastodon.social/@Ei30metry][Ei30metry]]
+- X: [[https://x.com/Ei30metry][Ei30metry]]
+
+Address: Karaj, Iran

@@ -1,0 +1,124 @@
+#+author: Artin Ghasivand
+#+title: Another example for Aidin
+
+Here is some constraint solver code
+
+#+begin_src haskell
+simplifyInfer :: Bool
+              -> TcLevel
+              -> [Sigma] -- TODO: Shouldn't this be a rho?
+              -> WantedCts
+              -> Tc ([(SkolTyVar, Kappa)], [Q])
+simplifyInfer topLevelBD lvl phis wanteds = do
+  traceTc "simplifyInfer" (indent 2 (pretty wanteds))
+  solved <- runCs (solveWantedCts wanteds)
+  wcsZonked <- zonkWantedCts solved
+  traceTc "simplifyInfer - solved and zonked wanteds" (pretty wcsZonked)
+  zphis <- mapM zonkSigma phis
+  traceTc "simplifyInfer - zonked phis" (pretty zphis)
+  if isInsolWC wcsZonked
+    then do traceTc "simplifyInfer - insoluble" (pretty wcsZonked)
+            throwError (InsolubleWC $ pretty wcsZonked)
+    else do traceTc "simplifyInfer - not insoluble" (pretty wcsZonked)
+            (qtvs, qs) <- decideQuantification topLevelBD zphis
+            emitResidualCts lvl (map fst qtvs) qs wcsZonked
+            pure (qtvs, qs)
+
+simplifyTopWantedCts :: WantedCts -> Cs WantedCts
+simplifyTopWantedCts = nestCs . solveWantedCts
+
+simplifyTop :: WantedCts -> Tc ()
+simplifyTop wcs = do
+  traceTc "simplifyTop - start" (indent 2 (pretty wcs))
+  final_wc  <- runCs (simplifyTopWantedCts wcs)
+  if isEmptyWC final_wc
+    then traceTc "simplifyTop - end" emptyDoc
+    else throwError (InsolubleWC (pretty final_wc))
+
+pushLevelAndSolveEqsX :: Tc a -> Tc (TcLevel, WantedCts, a)
+pushLevelAndSolveEqsX tc = do
+  lvl <- getTcLevel
+  let plvl = pushTcLevel lvl
+  (wanted, res) <- updEnv (setAmbientTcLevel plvl) $ do
+    (res, wanted) <- captureCts tc
+    wanted'       <- runCs (do traceCs "pushLevelAndSolveEqsX - start" $
+                                 vsep [pretty "plvl   =" <+> pretty plvl
+                                      ,pretty "wanted =" <+> pretty wanted]
+                               solveWantedCts wanted)
+
+    traceTc "pushLevelAndSolveEqsX - end" $
+      vsep [pretty "wanted':" <+> pretty wanted'
+           ,pretty "res:    " <+> emptyDoc]
+    return (wanted', res)
+  return (plvl, wanted, res)
+
+-- TODO: Add family support
+-- TODO: Should return a CanEqCt instead
+-- TODO: Remove this.
+
+-- TODO: Add class support
+-- tryInertIrreds :: CanIrredCt -> Cs ()
+-- tryInertIrreds irred = do
+--   irreds <- getInertIrreds
+--   actuallyTry irred irreds
+--   where
+--     actuallyTry irred@(MkIrredCt { irredCt = ct
+--                                  , irredReason = reason })
+--                 irreds
+--       | let (matching_irreds, others) = findMatchingIrreds irreds ct
+--       , matching : _ <- matching_irreds
+--       , let ct_matching = irredCt matching
+--       , not (isInsolReason reason) || isGivenCt ct_matching || isGivenCt ct
+--       = do traceCs "tryInertIrreds" $
+--               vcat [pretty "wanted:" <+> pprCt ct
+--                    ,pretty "inert:"  <+> pprCt ct_matching]
+--            updInertSet (updIrreds (const others))
+--            pure ()
+--       | otherwise
+--       = pure ()
+
+-- TODO: Utilize this to solve IrredCts that are no insoluble
+solveCanIrredCt :: CanIrredCt -> Cs ()
+solveCanIrredCt irred = undefined
+  -- tryInertIrreds irred
+
+solveEquality :: CtFlavour -> TcSigma -> TcSigma -> Cs ()
+solveEquality flv lhs rhs = do
+  r_lhs <- rewriteSigma lhs
+  r_rhs <- rewriteSigma rhs
+  traceCs "solveEquality - zonked types" $
+    vsep [pretty "LHS:" <+> pretty r_lhs
+         ,pretty "RHS:" <+> pretty r_rhs]
+  (irreds, canons) <- canonEqSigma flv r_lhs r_rhs
+  traceCs "solveEquality - constraints" $
+    vsep [pretty "Canonicals:"   <+> align (pprListV canons)
+         ,pretty "Irreducibles:" <+> align (pprListV irreds)]
+  mapM_ updInertIrreds irreds
+  -- See Note [The relation between unification and givens]
+  updInertEqsOrUnify canons
+#+end_src
+
+
+* This is a header for what
+** This is a subheader
+Foo
+** This
+1. Blah
+2. Foo
+3. Haskell
+4. Agda
+5. Racket
+* This is another header
+Pellentesque dapibus suscipit ligula.  Donec posuere augue in quam.  Etiam vel tortor sodales tellus ultricies commodo.  Suspendisse potenti.  Aenean in sem ac leo mollis blandit.  Donec neque quam, dignissim in, mollis nec, sagittis eu, wisi.  Phasellus lacus.  Etiam laoreet quam sed arcu.  Phasellus at dui in ligula mollis ultricies.  Integer placerat tristique nisl.  Praesent augue.  Fusce commodo.  Vestibulum convallis, lorem a tempus semper, dui dui euismod elit, vitae placerat urna tortor vitae lacus.  Nullam libero mauris, consequat quis, varius et, dictum id, arcu.  Mauris mollis tincidunt felis.  Aliquam feugiat tellus ut neque.  Nulla facilisis, risus a rhoncus fermentum, tellus tellus lacinia purus, et dictum nunc justo sit amet elit.
+
+Lorem ipsum dolor sit amet, consectetuer adipiscing elit.  Donec hendrerit tempor tellus.  Donec pretium posuere tellus.  Proin quam nisl, tincidunt et, mattis eget, convallis nec, purus.  Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.  Nulla posuere.  Donec vitae dolor.  Nullam tristique diam non turpis.  Cras placerat accumsan nulla.  Nullam rutrum.  Nam vestibulum accumsan nisl.
+
+Lorem ipsum dolor sit amet, consectetuer adipiscing elit.  Donec hendrerit tempor tellus.  Donec pretium posuere tellus.  Proin quam nisl, tincidunt et, mattis eget, convallis nec, purus.  Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.  Nulla posuere.  Donec vitae dolor.  Nullam tristique diam non turpis.  Cras placerat accumsan nulla.  Nullam rutrum.  Nam vestibulum accumsan nisl.
+
+Aliquam erat volutpat.  Nunc eleifend leo vitae magna.  In id erat non orci commodo lobortis.  Proin neque massa, cursus ut, gravida ut, lobortis eget, lacus.  Sed diam.  Praesent fermentum tempor tellus.  Nullam tempus.  Mauris ac felis vel velit tristique imperdiet.  Donec at pede.  Etiam vel neque nec dui dignissim bibendum.  Vivamus id enim.  Phasellus neque orci, porta a, aliquet quis, semper a, massa.  Phasellus purus.  Pellentesque tristique imperdiet tortor.  Nam euismod tellus id erat.
+
+Aliquam erat volutpat.  Nunc eleifend leo vitae magna.  In id erat non orci commodo lobortis.  Proin neque massa, cursus ut, gravida ut, lobortis eget, lacus.  Sed diam.  Praesent fermentum tempor tellus.  Nullam tempus.  Mauris ac felis vel velit tristique imperdiet.  Donec at pede.  Etiam vel neque nec dui dignissim bibendum.  Vivamus id enim.  Phasellus neque orci, porta a, aliquet quis, semper a, massa.  Phasellus purus.  Pellentesque tristique imperdiet tortor.  Nam euismod tellus id erat.
+
+Pellentesque dapibus suscipit ligula.  Donec posuere augue in quam.  Etiam vel tortor sodales tellus ultricies commodo.  Suspendisse potenti.  Aenean in sem ac leo mollis blandit.  Donec neque quam, dignissim in, mollis nec, sagittis eu, wisi.  Phasellus lacus.  Etiam laoreet quam sed arcu.  Phasellus at dui in ligula mollis ultricies.  Integer placerat tristique nisl.  Praesent augue.  Fusce commodo.  Vestibulum convallis, lorem a tempus semper, dui dui euismod elit, vitae placerat urna tortor vitae lacus.  Nullam libero mauris, consequat quis, varius et, dictum id, arcu.  Mauris mollis tincidunt felis.  Aliquam feugiat tellus ut neque.  Nulla facilisis, risus a rhoncus fermentum, tellus tellus lacinia purus, et dictum nunc justo sit amet elit.
+
+Aliquam erat volutpat.  Nunc eleifend leo vitae magna.  In id erat non orci commodo lobortis.  Proin neque massa, cursus ut, gravida ut, lobortis eget, lacus.  Sed diam.  Praesent fermentum tempor tellus.  Nullam tempus.  Mauris ac felis vel velit tristique imperdiet.  Donec at pede.  Etiam vel neque nec dui dignissim bibendum.  Vivamus id enim.  Phasellus neque orci, porta a, aliquet quis, semper a, massa.  Phasellus purus.  Pellentesque tristique imperdiet tortor.  Nam euismod tellus id erat.

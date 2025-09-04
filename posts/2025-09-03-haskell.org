@@ -1,0 +1,9 @@
+#+title: The best programming language ever
+#+author: Artin Ghasivand
+
+This is an example post in Haskell
+
+#+begin_src haskell
+main :: IO ()
+main = putStrLn "Hello world!"
+#+end_src

@@ -1,0 +1,14 @@
+#+title: About
+
+After finishing high school in 2023, I decided to take a Gap year, and considering that I had fallen in love with the [[https://www.haskell.org/][Haskell]]
+programming language, I spent a lot of time reading about programming language theory, type theory, and compilers.
+
+Just when I was looking for opportunities to get involved in the development of the [[https://www.haskell.org/ghc/][Glasow Haskell Compiler (GHC)]],
+one thing led to another and I found myself in the middle of the [[https://haskell.foundation/events/2023-ghc-development-workshop.html][2023 GHC Contributors' Workshop]] in the beautiful city of Zürich.
+
+There, I met [[https://simon.peytonjones.org/][Simon Peyton Jones]], and even though I was just 19 years old, he offered me a chance to do research with him.
+For the past 23 months, together with Simon and [[https://richarde.dev][Richard Eisenberg]], I've been working
+on formalizing GHC's typechecker. Our work has already been influential in GHC's development, and we've found many [["https://gitlab.haskell.org/ghc/ghc/-/issues/?sort=created_date&state=opened&author_username=Ei30metry&first_page_size=20"][bugs]], and
+[[https://github.com/ghc-proposals/ghc-proposals/discussions/663][opportunities for improvement]] because of it!
+
+Other things I'm interested in include, but are not limited to Emacs, Racket, philosophy, running, and cycling.
